@@ -16,7 +16,7 @@
 
 // test
 // Procedure & Function declaration
-void func(int sockfd);
+
 void toJson(char* *data, char* out);
 
 int main(int argc, char * argv[]){
@@ -65,10 +65,23 @@ int main(int argc, char * argv[]){
 	fin = fopen(filepath, "r");
 	char str[4];
 	size_t len = 0;
+	char nama[50];
+	printf("input sensor : ");
+	scanf("%s", nama);
+	char topic[50];
+	printf("input topic : ");
+	scanf("%s",topic);
+	char content[50];
+	printf("input content : ");
+	scanf("%s",content);
 	
 	while(fgets(str, sizeof(str), fin) != NULL){
 		int data= atoi(str);
-		printf("%d\n", data);
+		char buffer[1024];
+		char * list[4] = {"publish", nama, topic, content};
+		toJson(list, buffer);
+		//sprintf(buffer, "%d", data);
+		send(sockfd, buffer, sizeof (buffer), 0 );
 		sleep((double)1);
 		fgets(str, sizeof(str), fin);
 	}
@@ -79,26 +92,6 @@ int main(int argc, char * argv[]){
     return 0;
 }
 
-void func(int sockfd) 
-{ 
-	char buff[MAX]; 
-	int n; 
-	for (;;) { 
-		bzero(buff, sizeof(buff)); 
-		printf("Enter the string : "); 
-		n = 0; 
-		while ((buff[n++] = getchar()) != '\n') 
-			; 
-		write(sockfd, buff, sizeof(buff)); 
-		bzero(buff, sizeof(buff)); 
-		read(sockfd, buff, sizeof(buff)); 
-		printf("From Server : %s", buff); 
-		if ((strncmp(buff, "exit", 4)) == 0) { 
-			printf("Client Exit...\n"); 
-			break; 
-		} 
-	} 
-} 
 
 void toJson(char** data, char* out){
     char * key[4] = {"command", "who", "topic", "content"};
