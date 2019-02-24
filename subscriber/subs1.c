@@ -45,10 +45,22 @@ int main()
 	else
 		printf("connected to the server..\n"); 
 
-	char *data[3] = { "sub", "sub1", "/sensor/n1"};
+	printf("Nama Client: ");
+	char nama[50];
+	scanf("%s", nama);
+	printf("Topic: ");
+	char topic[50];
+	scanf("%s", topic);
+	char *data[4] = { "sub", nama, topic, "init"};
 	char buff[1024];
+	// proses inisiasi
+	// sprintf(data[3], "get"); --> masih error untuk ganti content
 	toJson(data, buff);
-	send(sockfd, buff, sizeof(buff), 0);
+	// send(sockfd, buff, sizeof(buff), 0);
+	printf("%s\n", buff);
+	// strcpy(data[3], "get");
+	// toJson(data, buff);
+	// send(sockfd, buff, sizeof(buff), 0);
 	// close the socket 
 	shutdown(sockfd, SHUT_WR);
 	close(sockfd); 
@@ -56,17 +68,17 @@ int main()
 
 
 void toJson(char** data, char* out){
-	const int len = 3;
-    char * key[3] = {"command", "who", "topic"};
+	const int l = 4;
+    char * key[4] = {"command", "who", "topic", "content"};
     char json_str[1024];
     strcpy(json_str, "{");
     int x = 1;
-    for (int i=0; i<len; i++){
+    for (int i=0; i<l; i++){
         char temp[1024];
         sprintf(temp, "\"%s\":\"%s\"", key[i], data[i]);
         strcpy(json_str+x, temp);
         x+=5+strlen(key[i])+strlen(data[i]);
-        if (i!=len-1){
+        if (i!=l-1){
             strcpy(json_str+x, ",");
             x++;
         }
