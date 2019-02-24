@@ -7,29 +7,15 @@
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/socket.h> 
+#include <json-c/json.h>
+
 #define MAX 80 
 #define PORT 1349
 #define SA struct sockaddr 
-void func(int sockfd) 
-{ 
-	char buff[MAX]; 
-	int n; 
-	for (;;) { 
-		bzero(buff, sizeof(buff)); 
-		printf("Enter the string : "); 
-		n = 0; 
-		while ((buff[n++] = getchar()) != '\n') 
-			; 
-		write(sockfd, buff, sizeof(buff)); 
-		bzero(buff, sizeof(buff)); 
-		read(sockfd, buff, sizeof(buff)); 
-		printf("From Server : %s", buff); 
-		if ((strncmp(buff, "exit", 4)) == 0) { 
-			printf("Client Exit...\n"); 
-			break; 
-		} 
-	} 
-} 
+
+// Procedure & Function
+void toJson(char** data, char* out);
+
 
 int main() 
 { 
@@ -59,9 +45,32 @@ int main()
 	else
 		printf("connected to the server..\n"); 
 
-	// function for chat 
-	func(sockfd); 
-
+	char *data[3] = { "sub", "sub1", "/sensor/n1"};
+	char buff[1024];
+	toJson(data, buff);
+	send(sockfd, buff, sizeof(buff), 0);
 	// close the socket 
+	shutdown(sockfd, SHUT_WR);
 	close(sockfd); 
 } 
+
+
+void toJson(char** data, char* out){
+	const int len = 3;
+    char * key[3] = {"command", "who", "topic"};
+    char json_str[1024];
+    strcpy(json_str, "{");
+    int x = 1;
+    for (int i=0; i<len; i++){
+        char temp[1024];
+        sprintf(temp, "\"%s\":\"%s\"", key[i], data[i]);
+        strcpy(json_str+x, temp);
+        x+=5+strlen(key[i])+strlen(data[i]);
+        if (i!=len-1){
+            strcpy(json_str+x, ",");
+            x++;
+        }
+    }
+    strcpy(json_str+x, "}\n");
+    strcpy(out, json_str);
+}

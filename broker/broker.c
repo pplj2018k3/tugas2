@@ -21,14 +21,12 @@
 	"command": "pub"
 	"who":"Sensor1",
 	"topic": "foo/bla",
-	"qos":0,
 	"content": 50
 }
 {
 	"command": "sub",
 	"who": "Subscriber1"
 	"topic": "foo/bli",
-	"qos": 0
 }
 //*/
 
@@ -180,7 +178,7 @@ int main(int argc , char *argv[])
 					printf("Host disconnected , ip %s , port %d \n" , 
 						inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
 						
-					//Close the socket and mark as 0 in list for reuse 
+					// Close the socket and mark as 0 in list for reuse
 					close( sd ); 
 					client_socket[i] = 0; 
 				} 
@@ -196,7 +194,8 @@ int main(int argc , char *argv[])
                     char * temp2;
 					temp2 = (char*)malloc(valread+strlen(temp)*sizeof(char));
 					sprintf(temp2, "%s%s", temp, buffer);
-					send(sd , temp2 , strlen(temp2) , 0 ); 
+					//send(sd , temp2 , strlen(temp2) , 0 ); 
+					printf("%s\n", temp2);
 				} 
 			} 
 		} 
