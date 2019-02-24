@@ -14,6 +14,7 @@
 #define PORT 1349
 #define SA struct sockaddr 
 
+// test
 // Procedure & Function declaration
 void func(int sockfd);
 void toJson(char* *data, char* out);
