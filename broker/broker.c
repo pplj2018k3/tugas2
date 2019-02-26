@@ -190,7 +190,7 @@ int main(int argc , char *argv[])
 					//of the data read 
 					//buffer[valread] = '!'; 
 					buffer[valread] = '\0'; 
-					char * temp = "server: ";
+					char * temp = "datain: ";
                     char * temp2;
 					temp2 = (char*)malloc(valread+strlen(temp)*sizeof(char));
 					sprintf(temp2, "%s%s", temp, buffer);
