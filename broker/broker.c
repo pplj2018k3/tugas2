@@ -207,12 +207,14 @@ int main(int argc , char *argv[])
 					tmp.sockfd = sd;
 					if (strcmp(command, "pub") == 0){
 						addtoList(&tmp, list_sensor);
+						char *temp2 = "Test From Broker to sensor";
+						send(sd , temp2 , strlen(temp2) , 0 );						
 					} else if (strcmp(command, "sub") == 0){
 						addtoList(&tmp, list_client);
 						char *temp2 = "Test From Broker";
 						send(sd , temp2 , strlen(temp2) , 0 );						
 					}
-
+					
 					printf("From: %s\nCommand: %s\n", client_id, command);
 					printf("-> \"%s\"\t\tin: %s\n", content, topic);
 					//send(sd , temp2 , strlen(temp2) , 0 );
