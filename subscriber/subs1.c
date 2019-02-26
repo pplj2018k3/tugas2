@@ -60,9 +60,9 @@ int main()
 	printf("%s\n", buff);
 	// strcpy(data[3], "get");
 	// toJson(data, buff);
-	// send(sockfd, buff, sizeof(buff), 0);
+	send(sockfd, buff, sizeof(buff), 0);
 	// close the socket 
-	shutdown(sockfd, SHUT_WR);
+	// shutdown(sockfd, SHUT_WR);
 	close(sockfd); 
 } 
 

@@ -14,9 +14,7 @@
 #define PORT 1349
 #define SA struct sockaddr 
 
-// test
 // Procedure & Function declaration
-
 void toJson(char* *data, char* out);
 
 int main(int argc, char * argv[]){
@@ -66,13 +64,12 @@ int main(int argc, char * argv[]){
 	char str[4];
 	size_t len = 0;
 	char nama[50];
-	printf("input sensor : ");
+	printf("Nama sensor: ");
 	scanf("%s", nama);
 	char topic[50];
-	printf("input topic : ");
+	printf("Topic: ");
 	scanf("%s",topic);
 	char content[50];
-	
 	
 	while(fgets(str, sizeof(str), fin) != NULL){
 		int data= atoi(str);
@@ -84,8 +81,6 @@ int main(int argc, char * argv[]){
 		sleep((double)1);
 		fgets(str, sizeof(str), fin);
 	}
-
-    // func(sockfd);
 
     close(sockfd);
     return 0;
