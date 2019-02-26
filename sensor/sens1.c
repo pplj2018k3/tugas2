@@ -72,15 +72,14 @@ int main(int argc, char * argv[]){
 	printf("input topic : ");
 	scanf("%s",topic);
 	char content[50];
-	printf("input content : ");
-	scanf("%s",content);
+	
 	
 	while(fgets(str, sizeof(str), fin) != NULL){
 		int data= atoi(str);
 		char buffer[1024];
-		char * list[4] = {"publish", nama, topic, content};
+		sprintf(content, "%d", data);
+		char * list[4] = {"pub", nama, topic, content};
 		toJson(list, buffer);
-		//sprintf(buffer, "%d", data);
 		send(sockfd, buffer, sizeof (buffer), 0 );
 		sleep((double)1);
 		fgets(str, sizeof(str), fin);
