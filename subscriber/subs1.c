@@ -9,7 +9,7 @@
 #include <sys/socket.h> 
 #include <json-c/json.h>
 
-#define MAX 80 
+#define MAX_STR 32
 #define PORT 1349
 #define SA struct sockaddr 
 
@@ -17,8 +17,12 @@
 void toJson(char** data, char* out);
 
 
-int main() 
-{ 
+int main(int argc, char *argv[]) { 
+	if (argc < 2){
+        fprintf(stderr, "Usage: %s <ip address>\n", argv[0]);
+        exit(1);
+    }
+
 	int sockfd, connfd; 
 	struct sockaddr_in servaddr, cli; 
 
@@ -34,7 +38,7 @@ int main()
 
 	// assign IP, PORT 
 	servaddr.sin_family = AF_INET; 
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+	servaddr.sin_addr.s_addr = inet_addr(argv[1]); 
 	servaddr.sin_port = htons(PORT); 
 
 	// connect the client socket to server socket 
@@ -46,23 +50,21 @@ int main()
 		printf("connected to the server..\n"); 
 
 	printf("Nama Client: ");
-	char nama[50];
+	char nama[MAX_STR];
 	scanf("%s", nama);
 	printf("Topic: ");
-	char topic[50];
+	char topic[MAX_STR];
 	scanf("%s", topic);
-	char *data[4] = { "sub", nama, topic, "init"};
+	char *data[4] = { "sub", nama, topic, "get"};
 	char buff[1024];
 	// proses inisiasi
-	// sprintf(data[3], "get"); --> masih error untuk ganti content
 	toJson(data, buff);
-	// send(sockfd, buff, sizeof(buff), 0);
-	printf("%s\n", buff);
-	// strcpy(data[3], "get");
-	// toJson(data, buff);
 	send(sockfd, buff, sizeof(buff), 0);
+	char buffin[1024];
+	// while(1){
+	// 	int len = recv(sockfd, buffin, 1024, 0);
+	// }
 	// close the socket 
-	// shutdown(sockfd, SHUT_WR);
 	close(sockfd); 
 } 
 

@@ -26,28 +26,22 @@
 
 #define MAX_STR 32
 
-struct sensor
+struct client
 {
-	char id[20];
+	char id[MAX_STR];
 	int sockfd;
-	struct sockaddr_in addr;
-	int condition;
-	char topic[20];
+	char topic[MAX_STR];
+	int condition; 
+	// 0 = kosong
+	// 1 = idle
+	// 
 };
 
-/*/
-{
-	"command": "pub"
-	"who":"Sensor1",
-	"topic": "foo/bla",
-	"content": 50
-}
-{
-	"command": "sub",
-	"who": "Subscriber1"
-	"topic": "foo/bli",
-}
-//*/
+// Procedure & Function
+void addtoList(struct client *in,struct client *out);
+int isTopicEquals(char *topic, struct client *id_in);
+void deleteList(int port);
+int getIndexList();
 
 int main(int argc , char *argv[]) 
 { 
@@ -102,12 +96,14 @@ int main(int argc , char *argv[])
 	addrlen = sizeof(address); 
 	puts("Waiting for connections ...\n"); 
 
-	struct sensor list_sensor[5];
-	for (int i=0; i<5; i++){
-		sprintf(list_sensor[i].id,"sensor%d", i);
+	struct client list_sensor[5];
+	struct client list_client[5];
+	
+	for (int x=0; x<5; x++){
+		list_sensor[x].condition = 0;
+		list_client[x].condition = 0;
 	}
 
-		
 	while(TRUE){ 
 		//clear the socket set 
 		FD_ZERO(&readfds); 
@@ -182,6 +178,7 @@ int main(int argc , char *argv[])
 				} 
 				// Process data yang masuk
 				else { 
+					// sd, inet_ntoa(address.sin_addr), ntohs(address.sin_port); 
 					struct json_object *parsed_json;
 					struct json_object *cmd;
 					struct json_object *id_client;
@@ -196,17 +193,29 @@ int main(int argc , char *argv[])
 					json_object_object_get_ex(parsed_json, "content", &content_json);
 					
 					char command[MAX_STR]; 
-					sprintf(command, "%s", json_object_get_string(cmd));
 					char client_id[MAX_STR];
-					sprintf(client_id, "%s", json_object_get_string(id_client));
 					char topic[MAX_STR];
-					sprintf(topic, "%s", json_object_get_string(topic_json));
 					char content[MAX_STR];
+					sprintf(command, "%s", json_object_get_string(cmd));
+					sprintf(client_id, "%s", json_object_get_string(id_client));
+					sprintf(topic, "%s", json_object_get_string(topic_json));
 					sprintf(content, "%s", json_object_get_string(content_json));
+
+					struct client tmp;
+					sprintf(tmp.id, "%s", client_id);
+					sprintf(tmp.topic, "%s", topic);
+					tmp.sockfd = sd;
+					if (strcmp(command, "pub") == 0){
+						addtoList(&tmp, list_sensor);
+					} else if (strcmp(command, "sub") == 0){
+						addtoList(&tmp, list_client);
+						char *temp2 = "Test From Broker";
+						send(sd , temp2 , strlen(temp2) , 0 );						
+					}
 
 					printf("From: %s\nCommand: %s\n", client_id, command);
 					printf("-> \"%s\"\t\tin: %s\n", content, topic);
-					printf("%d\n", strcmp("sub", command));
+					//send(sd , temp2 , strlen(temp2) , 0 );
 				} 
 			} 
 		} 
@@ -214,3 +223,48 @@ int main(int argc , char *argv[])
 		
 	return 0; 
 } 
+
+/*/
+struct client
+{
+	char id[MAX_STR];
+	int sockfd;
+	char topic[MAX_STR];
+	int condition; 
+	// 0 = kosong
+	// 1 = idle
+	// 
+};//*/
+
+void addtoList(struct client *in, struct client *out){
+	int i;
+	int dapat=0;
+	for(i=0; i<5; i++){
+		if (out->condition == 0){
+			sprintf(out->id, "%s", in->id);
+			out->sockfd = in->sockfd;
+			sprintf(out->topic, "%s", in->topic);
+			out->condition = 1;
+			dapat=1;
+			break;
+		}
+	}
+	if (!dapat){
+		printf("List penuh %d\n", i);
+	} else {
+		printf("Data masuk dalam List %d\n", i);
+	}
+}
+
+void deleteList(int port){
+
+}
+
+int isTopicEquals(char *topic, struct client *id_in){
+	if (strcmp(id_in->topic, topic) != 0){
+		return 0;
+	} else {
+		return 1;
+	}
+	
+}
