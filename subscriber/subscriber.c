@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 	printf("Topic: ");
 	char topic[MAX_STR];
 	scanf("%s", topic);
-	char *data[4] = { "sub", nama, topic, "get"};
+	char *data[4] = { "sub", nama, topic, "init"};
 	char buff[1024];
 	// proses inisiasi
 	toJson(data, buff);

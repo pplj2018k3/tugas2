@@ -96,11 +96,10 @@ int main(int argc , char *argv[])
 	addrlen = sizeof(address); 
 	puts("Waiting for connections ...\n"); 
 
-	struct client list_sensor[5];
 	struct client list_client[5];
+	int n_client = 0;
 	
 	for (int x=0; x<5; x++){
-		list_sensor[x].condition = 0;
 		list_client[x].condition = 0;
 	}
 
@@ -205,18 +204,28 @@ int main(int argc , char *argv[])
 					sprintf(tmp.id, "%s", client_id);
 					sprintf(tmp.topic, "%s", topic);
 					tmp.sockfd = sd;
+					if (strcmp(command, "sub") == 0){
+						if (strcmp(content, "init") == 0){
+							addtoList(&tmp, list_client);
+							char *temp2 = "Client sudah dilist\n";
+							send(sd , temp2 , strlen(temp2) , 0 );
+							n_client++;
+						}
+					}
+
 					if (strcmp(command, "pub") == 0){
-						addtoList(&tmp, list_sensor);
-						char *temp2 = "Test From Broker to sensor";
-						send(sd , temp2 , strlen(temp2) , 0 );						
-					} else if (strcmp(command, "sub") == 0){
-						addtoList(&tmp, list_client);
-						char *temp2 = "Test From Broker";
-						send(sd , temp2 , strlen(temp2) , 0 );						
+						if (n_client > 0){
+							for (int a = 0; a<5; a++){
+								if (strcmp(list_client[a].topic, topic) == 0){
+									char *temp2 = "Ini client yg subscribe kan?\n";
+									send(list_client[a].sockfd , temp2 , strlen(temp2) , 0 );
+								}
+							}
+						}
 					}
 					
-					printf("From: %s\nCommand: %s\n", client_id, command);
-					printf("-> \"%s\"\t\tin: %s\n", content, topic);
+					printf("Total: %d\n", n_client);
+					// printf("-> \"%s\"\t\tin: %s\n", content, topic);
 					//send(sd , temp2 , strlen(temp2) , 0 );
 				} 
 			} 
