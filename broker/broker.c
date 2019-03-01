@@ -39,21 +39,25 @@ struct client
 
 // Procedure & Function
 int addtoList(struct client *in,struct client *out);
-int isTopicEquals(char *topic, struct client *id_in);
 int deleteList(int sock, struct client *id_in);
-int getIndexList();
+void toJson(char** data, char* out);
 int n_client = 0;
 
-int main(int argc , char *argv[]) 
-{ 
-	struct client list_client[5];
+int main(int argc , char *argv[]){ 
+	if (argc < 2){
+        fprintf(stderr, "Usage: %s <number of subscriber>\n", argv[0]);
+        exit(1);
+    }
+	int max_subs = atoi(argv[1]);
+	int max_clients = 2*max_subs;
+	struct client list_client[max_subs];
 
-	for (int x=0; x<5; x++){
+	for (int x=0; x<max_subs; x++){
 		list_client[x].condition = 0;
 	}
 	int opt = TRUE; 
 	int master_socket , addrlen , new_socket , client_socket[10] , 
-		max_clients = 10 , activity, i , valread , sd; 
+		activity, i , valread , sd; 
 	int max_sd; 
 	struct sockaddr_in address; 
 		
@@ -90,7 +94,7 @@ int main(int argc , char *argv[])
 		perror("bind failed"); 
 		exit(EXIT_FAILURE); 
 	} 
-	printf("Listener on port %d \n", PORT); 
+	printf("Listener on port %d for %d client and %d Subscriber\n", PORT, max_clients, max_subs); 
 		
 	//try to specify maximum of 5 pending connections for the master socket 
 	if (listen(master_socket, 5) < 0){ 
@@ -142,7 +146,7 @@ int main(int argc , char *argv[])
 			} 
 			
 			//inform user of socket number - used in send and receive commands 
-			printf("New connection, sockfd:%d, ip: %s, port: %d\n", 
+			printf("-> New Connection! Sockfd:%d, IP:%s, port:%d, ", 
             	new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port)); 
 			
 			//add new socket to array of sockets 
@@ -150,8 +154,7 @@ int main(int argc , char *argv[])
 				//if position is empty 
 				if( client_socket[i] == 0 ){ 
 					client_socket[i] = new_socket; 
-					printf("Adding to list of sockets as %d\n" , i); 
-						
+					printf("#%d\n" , i); 
 					break; 
 				} 
 			} 
@@ -172,6 +175,8 @@ int main(int argc , char *argv[])
 						
 					for (int i=0; i<5; i++){
 						if (deleteList(sd, &list_client[i])){
+							printf("-> %s disconnected w/ sockfd:%d\n",
+								list_client[i].id, list_client[i].sockfd);
 							break;
 						}
 					}
@@ -210,15 +215,21 @@ int main(int argc , char *argv[])
 					tmp.sockfd = sd;
 					if (strcmp(command, "sub") == 0){
 						if (strcmp(content, "init") == 0){
-							for (int i=0; i<5; i++){
-								if (addtoList(&tmp, &list_client[i]) > 0){
-									printf("%s Connected, sockfd:%d, subscribe at:%s\n", 
-										list_client[i].id, list_client[i].sockfd, list_client[i].topic);
-									char *temp2 = "Client sudah dilist";
-									send(sd , temp2 , strlen(temp2) , 0 );
-									n_client++;
-									break;
-								} 
+							if (n_client == max_subs){
+								char *temp2 = "Slot Subscriber Penuh";
+								printf("%s\n", temp2);
+								send(sd , temp2 , strlen(temp2) , 0 );
+							} else {
+								for (int i=0; i<5; i++){
+									if (addtoList(&tmp, &list_client[i]) > 0){
+										printf("->   %s Connected, sockfd:%d, subscribe at:%s\n", 
+											list_client[i].id, list_client[i].sockfd, list_client[i].topic);
+										char *temp2 = "Client sudah dilist";
+										send(sd , temp2 , strlen(temp2) , 0 );
+										n_client++;
+										break;
+									} 
+								}
 							}
 						}
 					}
@@ -227,9 +238,11 @@ int main(int argc , char *argv[])
 						if (n_client > 0){
 							for (int a = 0; a<5; a++){
 								if (strcmp(list_client[a].topic, topic) == 0){
-									char data_sensor[MAX_STR] = {0};
-									sprintf(data_sensor, "%s", content);
-									send(list_client[a].sockfd , data_sensor , strlen(data_sensor) , 0 );
+									memset(buffer, 0, sizeof(buffer));
+									char *data_out[4]={"pub", client_id, list_client[a].topic, content};
+									toJson(data_out, buffer);
+									// sprintf(buffer, "%s", content);
+									send(list_client[a].sockfd , buffer , strlen(buffer) , 0 );
 								}
 							}
 						}
@@ -281,19 +294,28 @@ int deleteList(int sock, struct client *id_in){
 	int stat = 0;
 	if (id_in->sockfd == sock){
 		id_in->condition = 0;
-		printf("%s disconnected w/ sockfd:%d\n",
-			id_in->id, id_in->sockfd);
 		n_client--;
 		stat = 1;
 	}
 	return stat;
 }
 
-int isTopicEquals(char *topic, struct client *id_in){
-	if (strcmp(id_in->topic, topic) != 0){
-		return 0;
-	} else {
-		return 1;
-	}
-	
+void toJson(char** data, char* out){
+	const int l = 4;
+    char * key[4] = {"command", "who", "topic", "content"};
+    char json_str[1024];
+    strcpy(json_str, "{");
+    int x = 1;
+    for (int i=0; i<l; i++){
+        char temp[1024];
+        sprintf(temp, "\"%s\":\"%s\"", key[i], data[i]);
+        strcpy(json_str+x, temp);
+        x+=5+strlen(key[i])+strlen(data[i]);
+        if (i!=l-1){
+            strcpy(json_str+x, ",");
+            x++;
+        }
+    }
+    strcpy(json_str+x, "}\n");
+    strcpy(out, json_str);
 }

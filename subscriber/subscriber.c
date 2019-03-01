@@ -19,9 +19,17 @@ void toJson(char** data, char* out);
 
 int main(int argc, char *argv[]) { 
 	if (argc < 2){
-        fprintf(stderr, "Usage: %s <ip address>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <ip address> [--raw]\n", argv[0]);
         exit(1);
     }
+	int rawdata = 0;
+	for (int i=0; i<argc; i++){
+		if (strcmp(argv[i], "--raw") == 0){
+			rawdata = 1;
+			break;
+		}
+	}
+	// printf("rawdata=%d", rawdata);
 
 	int sockfd, connfd; 
 	struct sockaddr_in servaddr, cli; 
@@ -61,14 +69,24 @@ int main(int argc, char *argv[]) {
 	toJson(data, buff);
 	send(sockfd, buff, sizeof(buff), 0);
 	char buffin[1024] = {0};
-	while(1){
-		int len = recv(sockfd, buffin, 1024, 0);
-		printf("%s\n", buffin);
+	int len = 0;
+	while((len = recv(sockfd, buffin, 1024, 0)) > 0){
+		if (rawdata)
+			printf("%s\n", buffin);
+		else {
+			struct json_object *parsed_json;
+			struct json_object *who_json;
+			struct json_object *content_json;
+
+			parsed_json = json_tokener_parse(buffin);
+			json_object_object_get_ex(parsed_json, "who", &who_json);
+			json_object_object_get_ex(parsed_json, "content", &content_json);
+			printf("Data From:%s\n-> %s\n", json_object_get_string(who_json), json_object_get_string(content_json));
+		}
 	}
 	// close the socket 
 	close(sockfd); 
 } 
-
 
 void toJson(char** data, char* out){
 	const int l = 4;
