@@ -38,20 +38,26 @@ struct client
 };
 
 // Procedure & Function
-void addtoList(struct client *in,struct client *out);
+int addtoList(struct client *in,struct client *out);
 int isTopicEquals(char *topic, struct client *id_in);
-void deleteList(int port);
+int deleteList(int sock, struct client *id_in);
 int getIndexList();
+int n_client = 0;
 
 int main(int argc , char *argv[]) 
 { 
+	struct client list_client[5];
+
+	for (int x=0; x<5; x++){
+		list_client[x].condition = 0;
+	}
 	int opt = TRUE; 
 	int master_socket , addrlen , new_socket , client_socket[10] , 
 		max_clients = 10 , activity, i , valread , sd; 
 	int max_sd; 
 	struct sockaddr_in address; 
 		
-	char buffer[1024]; //data buffer of 1K 
+	char buffer[1024] = {0}; //data buffer of 1K 
 		
 	//set of socket descriptors 
 	fd_set readfds; 
@@ -96,12 +102,6 @@ int main(int argc , char *argv[])
 	addrlen = sizeof(address); 
 	puts("Waiting for connections ...\n"); 
 
-	struct client list_client[5];
-	int n_client = 0;
-	
-	for (int x=0; x<5; x++){
-		list_client[x].condition = 0;
-	}
 
 	while(TRUE){ 
 		//clear the socket set 
@@ -136,16 +136,15 @@ int main(int argc , char *argv[])
 		//If something happened on the master socket , 
 		//then its an incoming connection 
 		if (FD_ISSET(master_socket, &readfds)){ 
-			if ((new_socket = accept(master_socket, 
-					(SA *)&address, (socklen_t*)&addrlen))<0){ 
+			if ((new_socket = accept(master_socket, (SA *)&address, (socklen_t*)&addrlen))<0){ 
 				perror("accept"); 
 				exit(EXIT_FAILURE); 
 			} 
 			
 			//inform user of socket number - used in send and receive commands 
-			printf("New connection , socket fd is %d , ip is : %s , port : %d\n", 
-            new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port)); 
-				
+			printf("New connection, sockfd:%d, ip: %s, port: %d\n", 
+            	new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port)); 
+			
 			//add new socket to array of sockets 
 			for (i = 0; i < max_clients; i++){ 
 				//if position is empty 
@@ -168,9 +167,14 @@ int main(int argc , char *argv[])
 				if ((valread = read( sd , buffer, 1024)) == 0){ 
 					//Somebody disconnected , get his details and print 
 					getpeername(sd , (SA*)&address , (socklen_t*)&addrlen); 
-					printf("Host disconnected , ip %s , port %d \n" , 
-						inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
+					// printf("Host disconnected , ip %s , port %d \n" , 
+					// 	inet_ntoa(address.sin_addr) , ntohs(address.sin_port)); 
 						
+					for (int i=0; i<5; i++){
+						if (deleteList(sd, &list_client[i])){
+							break;
+						}
+					}
 					// Close the socket and mark as 0 in list for reuse
 					close( sd ); 
 					client_socket[i] = 0; 
@@ -206,10 +210,16 @@ int main(int argc , char *argv[])
 					tmp.sockfd = sd;
 					if (strcmp(command, "sub") == 0){
 						if (strcmp(content, "init") == 0){
-							addtoList(&tmp, list_client);
-							char *temp2 = "Client sudah dilist\n";
-							send(sd , temp2 , strlen(temp2) , 0 );
-							n_client++;
+							for (int i=0; i<5; i++){
+								if (addtoList(&tmp, &list_client[i]) > 0){
+									printf("%s Connected, sockfd:%d, subscribe at:%s\n", 
+										list_client[i].id, list_client[i].sockfd, list_client[i].topic);
+									char *temp2 = "Client sudah dilist";
+									send(sd , temp2 , strlen(temp2) , 0 );
+									n_client++;
+									break;
+								} 
+							}
 						}
 					}
 
@@ -217,14 +227,22 @@ int main(int argc , char *argv[])
 						if (n_client > 0){
 							for (int a = 0; a<5; a++){
 								if (strcmp(list_client[a].topic, topic) == 0){
-									char *temp2 = "Ini client yg subscribe kan?\n";
-									send(list_client[a].sockfd , temp2 , strlen(temp2) , 0 );
+									char data_sensor[MAX_STR] = {0};
+									sprintf(data_sensor, "%s", content);
+									send(list_client[a].sockfd , data_sensor , strlen(data_sensor) , 0 );
 								}
 							}
 						}
 					}
-					
-					printf("Total: %d\n", n_client);
+
+					/*/ 					
+					if (n_client>0){
+						printf("Total: %d  ", n_client);
+						for (int x=0; x<n_client; x++){
+							printf("%s:%d\t", list_client[x].id, list_client[x].sockfd);
+						}
+						printf("\n");
+					}//*/
 					// printf("-> \"%s\"\t\tin: %s\n", content, topic);
 					//send(sd , temp2 , strlen(temp2) , 0 );
 				} 
@@ -247,28 +265,28 @@ struct client
 	// 
 };//*/
 
-void addtoList(struct client *in, struct client *out){
-	int i;
+int addtoList(struct client *in, struct client *out){
 	int dapat=0;
-	for(i=0; i<5; i++){
-		if (out->condition == 0){
-			sprintf(out->id, "%s", in->id);
-			out->sockfd = in->sockfd;
-			sprintf(out->topic, "%s", in->topic);
-			out->condition = 1;
-			dapat=1;
-			break;
-		}
+	if (out->condition == 0){
+		sprintf(out->id, "%s", in->id);
+		out->sockfd = in->sockfd;
+		sprintf(out->topic, "%s", in->topic);
+		out->condition = 1;
+		dapat=1;
 	}
-	if (!dapat){
-		printf("List penuh %d\n", i);
-	} else {
-		printf("Data masuk dalam List %d\n", i);
-	}
+	return dapat;
 }
 
-void deleteList(int port){
-
+int deleteList(int sock, struct client *id_in){
+	int stat = 0;
+	if (id_in->sockfd == sock){
+		id_in->condition = 0;
+		printf("%s disconnected w/ sockfd:%d\n",
+			id_in->id, id_in->sockfd);
+		n_client--;
+		stat = 1;
+	}
+	return stat;
 }
 
 int isTopicEquals(char *topic, struct client *id_in){

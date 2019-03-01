@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 	// proses inisiasi
 	toJson(data, buff);
 	send(sockfd, buff, sizeof(buff), 0);
-	char buffin[1024];
+	char buffin[1024] = {0};
 	while(1){
 		int len = recv(sockfd, buffin, 1024, 0);
 		printf("%s\n", buffin);
