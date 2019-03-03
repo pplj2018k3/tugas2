@@ -6,9 +6,9 @@ This project using external library `json-c`. Installation in [here](https://git
 For running this code, please run `./broker` first.
 
 ### Broker
-Run with 
+Run with `<numb subscriber>`. Example:
 ```
-./broker
+./broker 6
 ```
 
 ### Subscriber & Sensor
